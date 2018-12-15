@@ -17,6 +17,7 @@ import json
 import click
 import os
 import tabulate
+import getpass
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -24,13 +25,23 @@ SDWAN_IP = os.environ.get("SDWAN_IP")
 SDWAN_USERNAME = os.environ.get("SDWAN_USERNAME")
 SDWAN_PASSWORD = os.environ.get("SDWAN_PASSWORD")
 
+
 if SDWAN_IP is None or SDWAN_USERNAME is None or SDWAN_PASSWORD is None:
-    print("CISCO SDWAN details must be set via environment variables before running.")
+    print(" CISCO SDWAN details may be set via environment variables before running.")
     print("   export SDWAN_IP=10.10.30.190")
     print("   export SDWAN_USERNAME=admin")
     print("   export SDWAN_PASSWORD=admin")
     print("")
-    exit("1")
+    print("please input your vManage IP")
+    SDWAN_IP = input("SDWAN_IP: ")
+    print("please input your vManage iusername")
+    SDWAN_USERNAME = input("SDWAN_USERNAME: ")
+    print("please input your vManage password")
+    SDWAN_PASSWORD = getpass.getpass("Password")
+    SDWAN_PASSWORD
+    SDWAN_IP
+    SDWAN_USERNAME
+
 
 class rest_api_lib:
     def __init__(self, vmanage_ip, username, password):
@@ -143,6 +154,7 @@ def template_list():
         click.echo(tabulate.tabulate(table, headers, tablefmt="grid"))
 
 @click.command()
+
 @click.option("--template", help="Name of the template you wish to retrieve information for")
 def attached_devices(template):
     """Retrieve and return devices associated to a template.
