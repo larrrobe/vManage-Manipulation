@@ -38,9 +38,7 @@ if SDWAN_IP is None or SDWAN_USERNAME is None or SDWAN_PASSWORD is None:
     SDWAN_USERNAME = input("SDWAN_USERNAME: ")
     print("please input your vManage password")
     SDWAN_PASSWORD = getpass.getpass("Password")
-    SDWAN_PASSWORD
-    SDWAN_IP
-    SDWAN_USERNAME
+
 
 
 class rest_api_lib:
