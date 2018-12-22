@@ -1,4 +1,10 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
+import sys
+# For testing I'm using version 3.7 so I'm setting that to be the minimum version. It may
+# very well work under other versions I just haven't gotten that far along in my programing skills
+# I would love to have some help with that :)
+assert sys.version_info >= (3,7)
+
 """
 Class with REST Api GET and POST libraries
 
@@ -18,6 +24,7 @@ import click
 import os
 import tabulate
 import getpass
+import time
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -25,21 +32,18 @@ SDWAN_IP = os.environ.get("SDWAN_IP")
 SDWAN_USERNAME = os.environ.get("SDWAN_USERNAME")
 SDWAN_PASSWORD = os.environ.get("SDWAN_PASSWORD")
 
-
 if SDWAN_IP is None or SDWAN_USERNAME is None or SDWAN_PASSWORD is None:
-    print(" CISCO SDWAN details may be set via environment variables before running.")
-    print("   export SDWAN_IP=10.10.30.190")
+    print(" CISCO SDWAN details may also be set via environment variables before running.")
+    print("   export SDWAN_IP=1.2.3.4")
     print("   export SDWAN_USERNAME=admin")
     print("   export SDWAN_PASSWORD=admin")
     print("")
     print("please input your vManage IP")
     SDWAN_IP = input("SDWAN_IP: ")
-    print("please input your vManage iusername")
+    print("please input your vManage username")
     SDWAN_USERNAME = input("SDWAN_USERNAME: ")
     print("please input your vManage password")
-    SDWAN_PASSWORD = getpass.getpass("Password")
-
-
+    SDWAN_PASSWORD = getpass.getpass("Password: ")
 
 class rest_api_lib:
     def __init__(self, vmanage_ip, username, password):
@@ -255,12 +259,52 @@ def detach(target, sysip):
     response = sdwanp.post_request('template/config/device/mode/cli', payload)
     print (response)
 
+@click.command()
+@click.option("--template", help="Name of the template to deploy")
+@click.option("--target", help="Hostname of target network device.")
+@click.option("--hostname", help="Hostname you wish the target has")
+@click.option("--sysip", help="System IP you wish the target has")
+def export(template, target, hostname, sysip):
+    """ Function to export templates.  
+
+     Example Command
+
+        ./sdwan.py export --template TEMPLATE_NAME_TO_BE_EXPORTED
+     """
+    response = json.loads(sdwanp.get_request('template/device'))
+    # here I'm setting the variable items equal to the data that is returned.
+    items = response['data']
+    # Now the variable is going to be a large list of items.  We need to sort through them one at a time looking
+    # for the device name given and converting it to the Device ID
+    for item in items:
+        # ID list will be a running list of all Template ID's we collect for a given device
+        ID_LIST = []
+        # print(item['templateId'], item['templateName'])
+        if item['templateName'] == str(template):
+            devID = item['templateId']
+            URL = 'template/device/object/'+str(devID)
+            device = json.loads(sdwanp.get_request(URL))
+            for templateIDs in device['generalTemplates']:
+                ID_LIST.append(templateIDs['templateId'])
+                if 'subTemplates' in templateIDs:
+                    for ID in templateIDs['subTemplates']:
+                        ID_LIST.append(ID['templateId'])
+
+            print('printing ',len(ID_LIST),'templates: ')
+            count = 1
+            for ID in ID_LIST:
+                print('#################### template Number',str(count),'################################')
+                DEVURL = 'template/feature/object/'+str(ID)
+                DEVCFG = json.loads(sdwanp.get_request(DEVURL))
+                print(json.dumps(DEVCFG, indent=4, sort_keys=False))
+                count = count+1
+
 cli.add_command(attach)
 cli.add_command(detach)
 cli.add_command(device_list)
 cli.add_command(attached_devices)
 cli.add_command(template_list)
+cli.add_command(export)
 
 if __name__ == "__main__":
     cli()
-   
